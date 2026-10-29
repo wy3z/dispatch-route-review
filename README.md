@@ -3,7 +3,7 @@
 A read-only map of booked field-engineer visits from Autotask, with nearby
 unassigned work.
 
-I built it so the logistics team could see which jobs sit close to where
+Purpose built for a logistics team to see which jobs sit close to where
 engineers already are, and book them into efficient routes.
 
 ![Six engineer routes with road geometry, nearby suggestions and issue flags](docs/images/overview.png)
