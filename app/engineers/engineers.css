@@ -1,0 +1,227 @@
+/* Engineer roster and editor. */
+
+.engineers-page .admin-action { font-size: 13px; }
+
+.engineers-add { flex: none; }
+
+.engineers-roster-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.engineers-editor-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  background: rgba(8, 12, 18, .62);
+  backdrop-filter: blur(5px);
+}
+
+.engineers-editor {
+  width: min(860px, 100%);
+  max-height: calc(100vh - 48px);
+  margin: auto;
+  overflow-y: auto;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .34);
+}
+
+.engineers-editor form {
+  display: grid;
+  gap: 20px;
+}
+
+.engineers-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.engineers-form-grid label,
+.engineers-hours label,
+.engineers-aliases {
+  display: grid;
+  gap: 6px;
+}
+
+.engineers-form-grid label > span,
+.engineers-hours label > span,
+.engineers-aliases > span,
+.engineers-working-days legend {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.engineers-form-grid input,
+.engineers-form-grid select,
+.engineers-hours input,
+.engineers-aliases input {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.engineers-aliases small { color: var(--muted); }
+
+.engineers-working-days {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 0;
+}
+
+.engineers-working-days legend {
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+.engineers-working-days label,
+.engineers-show-inactive {
+  min-height: 38px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--wash);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.engineers-working-days input,
+.engineers-show-inactive input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--blue);
+}
+
+.engineers-status-transfer {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.engineers-status-transfer > label {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.engineers-status-transfer select {
+  width: 100%;
+  height: 300px;
+  padding: 4px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.engineers-status-transfer option {
+  padding: 6px 8px;
+  border-radius: 5px;
+}
+
+.engineers-status-transfer-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.engineers-status-transfer-actions .admin-action {
+  width: 40px;
+  min-height: 38px;
+  padding: 0;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.engineers-hours {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 180px));
+  gap: 14px;
+}
+
+.engineers-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.engineers-primary {
+  color: #fff;
+  background: var(--blue);
+  border-color: var(--blue);
+}
+
+.engineers-table td { font-size: 13px; }
+
+.engineers-table code,
+.engineers-table td small {
+  font-size: 12px;
+}
+
+.engineer-status-active {
+  color: var(--mint) !important;
+  font-weight: 700;
+}
+
+.engineer-status-inactive {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.engineers-row-actions {
+  display: flex;
+  gap: 7px;
+}
+
+.engineers-remove { color: var(--red); }
+
+@media (max-width: 900px) {
+  .engineers-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .engineers-editor-backdrop { padding: 10px; }
+
+  .engineers-editor { max-height: calc(100vh - 20px); }
+
+  .engineers-roster-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .engineers-form-grid,
+  .engineers-hours {
+    grid-template-columns: 1fr;
+  }
+
+  .engineers-status-transfer {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .engineers-status-transfer select { height: 260px; }
+}

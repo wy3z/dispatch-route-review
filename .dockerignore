@@ -1,0 +1,21 @@
+.git
+.env
+.env.*
+**/.env
+**/.env.*
+.dev-auth
+node_modules
+.next
+coverage
+dist
+npm-debug.log*
+pnpm-debug.log*
+*.log
+
+# Database backups and runtime diagnostics
+dispatch-route-review-*.dump
+**/dispatch-route-review-*.dump
+*.cpuprofile
+**/*.cpuprofile
+*.heapsnapshot
+**/*.heapsnapshot

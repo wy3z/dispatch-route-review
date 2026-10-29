@@ -1,0 +1,150 @@
+services:
+  app:
+    environment:
+      AUTH_MODE: forward-auth
+      PUBLIC_ORIGIN: https://localhost:3443
+      ENTRA_TENANT_ID: ${ENTRA_TENANT_ID:?set the concrete development Entra tenant GUID}
+    # Remove compose.dev.yml's direct localhost:3100 publication in
+    # authenticated mode; every browser request must traverse Traefik.
+    ports: !reset []
+    networks:
+      - default
+      - auth-edge
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: dispatch-route-review-dev-auth-edge
+      traefik.http.routers.dispatch-route-review-dev.rule: Host(`localhost`)
+      traefik.http.routers.dispatch-route-review-dev.entrypoints: websecure
+      traefik.http.routers.dispatch-route-review-dev.tls: "true"
+      traefik.http.routers.dispatch-route-review-dev.middlewares: dispatch-route-review-dev-identity-sanitize@docker,dispatch-route-review-dev-auth@docker,dispatch-route-review-dev-security@docker
+      traefik.http.routers.dispatch-route-review-dev-logout.rule: Host(`localhost`) && Path(`/logout/entra`)
+      traefik.http.routers.dispatch-route-review-dev-logout.priority: "110"
+      traefik.http.routers.dispatch-route-review-dev-logout.entrypoints: websecure
+      traefik.http.routers.dispatch-route-review-dev-logout.tls: "true"
+      traefik.http.routers.dispatch-route-review-dev-logout.middlewares: dispatch-route-review-dev-security@docker
+      traefik.http.routers.dispatch-route-review-dev-logout.service: dispatch-route-review-dev
+      traefik.http.services.dispatch-route-review-dev.loadbalancer.server.port: "3100"
+      traefik.http.services.dispatch-route-review-dev.loadbalancer.healthcheck.path: /api/health/live
+      traefik.http.services.dispatch-route-review-dev.loadbalancer.healthcheck.interval: 10s
+      traefik.http.middlewares.dispatch-route-review-dev-identity-sanitize.headers.customrequestheaders.X-Auth-Request-User: ""
+      traefik.http.middlewares.dispatch-route-review-dev-identity-sanitize.headers.customrequestheaders.X-Auth-Request-Email: ""
+      traefik.http.middlewares.dispatch-route-review-dev-identity-sanitize.headers.customrequestheaders.X-Auth-Request-Preferred-Username: ""
+      traefik.http.middlewares.dispatch-route-review-dev-identity-sanitize.headers.customrequestheaders.X-Forwarded-User: ""
+      traefik.http.middlewares.dispatch-route-review-dev-identity-sanitize.headers.customrequestheaders.X-Forwarded-Email: ""
+      traefik.http.middlewares.dispatch-route-review-dev-identity-sanitize.headers.customrequestheaders.X-Forwarded-Preferred-Username: ""
+      traefik.http.middlewares.dispatch-route-review-dev-auth.forwardauth.address: http://oauth2-proxy:4180/
+      traefik.http.middlewares.dispatch-route-review-dev-auth.forwardauth.trustForwardHeader: "false"
+      traefik.http.middlewares.dispatch-route-review-dev-auth.forwardauth.authResponseHeaders: X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Preferred-Username
+      traefik.http.middlewares.dispatch-route-review-dev-auth.forwardauth.maxResponseBodySize: "65536"
+      traefik.http.middlewares.dispatch-route-review-dev-security.headers.frameDeny: "true"
+      traefik.http.middlewares.dispatch-route-review-dev-security.headers.contentTypeNosniff: "true"
+      traefik.http.middlewares.dispatch-route-review-dev-security.headers.referrerPolicy: no-referrer
+      traefik.http.middlewares.dispatch-route-review-dev-security.headers.stsSeconds: "31536000"
+      traefik.http.middlewares.dispatch-route-review-dev-security.headers.stsIncludeSubdomains: "true"
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.3
+    restart: unless-stopped
+    command:
+      - --provider=oidc
+      - --provider-display-name=Microsoft Entra ID
+      - --oidc-issuer-url=https://login.microsoftonline.com/${ENTRA_TENANT_ID:?set the Entra tenant ID}/v2.0
+      - --insecure-oidc-skip-nonce=false
+      - --client-id=${OAUTH2_PROXY_CLIENT_ID:?set the development Entra application client ID}
+      - --client-secret=${OAUTH2_PROXY_CLIENT_SECRET:?set the development Entra application client secret}
+      - --redirect-url=https://localhost:3443/oauth2/callback
+      - --scope=openid profile email
+      - --oidc-email-claim=preferred_username
+      - --email-domain=${OAUTH2_PROXY_EMAIL_DOMAINS:-*}
+      - --upstream=static://202
+      - --http-address=0.0.0.0:4180
+      - --reverse-proxy=true
+      - --trusted-proxy-ip=${DEV_AUTH_EDGE_SUBNET:-172.31.77.0/24}
+      - --set-xauthrequest=true
+      - --pass-access-token=false
+      - --pass-authorization-header=false
+      - --set-authorization-header=false
+      - --skip-provider-button=true
+      - --cookie-name=__Host-dispatch_route_review_dev
+      - --cookie-secret=${OAUTH2_PROXY_COOKIE_SECRET:?set a separate development cookie secret}
+      - --cookie-secure=true
+      - --cookie-httponly=true
+      - --cookie-samesite=lax
+      - --cookie-refresh=1h
+      - --cookie-expire=8h
+      - --code-challenge-method=S256
+      - --silence-ping-logging=true
+    depends_on:
+      app:
+        condition: service_started
+    networks:
+      - auth-edge
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: dispatch-route-review-dev-auth-edge
+      traefik.http.routers.dispatch-route-review-dev-oauth.rule: Host(`localhost`) && PathPrefix(`/oauth2/`)
+      traefik.http.routers.dispatch-route-review-dev-oauth.priority: "100"
+      traefik.http.routers.dispatch-route-review-dev-oauth.entrypoints: websecure
+      traefik.http.routers.dispatch-route-review-dev-oauth.tls: "true"
+      traefik.http.services.dispatch-route-review-dev-oauth.loadbalancer.server.port: "4180"
+      traefik.http.services.dispatch-route-review-dev-oauth.loadbalancer.healthcheck.path: /ready
+      traefik.http.services.dispatch-route-review-dev-oauth.loadbalancer.healthcheck.interval: 10s
+    security_opt:
+      - no-new-privileges:true
+
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:latest
+    restart: unless-stopped
+    environment:
+      CONTAINERS: "1"
+      NETWORKS: "1"
+      SERVICES: "1"
+      TASKS: "1"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - auth-edge
+    read_only: true
+    tmpfs:
+      - /run
+    security_opt:
+      - no-new-privileges:true
+
+  traefik:
+    image: traefik:3.7
+    restart: unless-stopped
+    command:
+      - --api.dashboard=false
+      - --global.checknewversion=true
+      - --global.sendanonymoususage=false
+      - --log.level=INFO
+      - --accesslog=true
+      - --providers.docker.endpoint=tcp://socket-proxy:2375
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=dispatch-route-review-dev-auth-edge
+      - --providers.file.filename=/etc/traefik/dynamic/tls.yml
+      - --providers.file.watch=true
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.aliasheadersstrategy=delete
+    depends_on:
+      - socket-proxy
+    ports:
+      - "127.0.0.1:3443:443"
+    volumes:
+      - ./docker/traefik.dev-auth.yml:/etc/traefik/dynamic/tls.yml:ro
+      - ./.dev-auth/certs:/certs:ro
+    networks:
+      - auth-edge
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  auth-edge:
+    name: dispatch-route-review-dev-auth-edge
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${DEV_AUTH_EDGE_SUBNET:-172.31.77.0/24}

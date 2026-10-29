@@ -1,0 +1,39 @@
+.handle {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: -7px;
+  bottom: 0;
+  width: 14px;
+  padding: 0;
+  touch-action: none;
+  cursor: ew-resize;
+  outline: none;
+}
+
+.handle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--map-glass-muted-text, currentColor);
+  opacity: 0;
+  transform: translate(-50%, -50%) scaleY(.72);
+  transition: opacity 140ms ease, transform 180ms ease;
+}
+
+.handle:hover::after,
+.handle:focus-visible::after,
+.handle[data-resizing="true"]::after {
+  opacity: .62;
+  transform: translate(-50%, -50%) scaleY(1);
+}
+
+.handle:focus-visible::after { box-shadow: 0 0 0 2px var(--map-glass-focus, Highlight); }
+
+@media (prefers-reduced-motion: reduce) {
+  .handle::after { transition: none; }
+}

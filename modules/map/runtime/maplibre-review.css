@@ -1,0 +1,266 @@
+.review-libre-frame .maplibregl-ctrl-group {
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 4px 18px #0002;
+}
+
+.review-libre-frame .maplibregl-ctrl-group button {
+  width: 36px;
+  height: 36px;
+}
+
+.review-libre-frame .review-map-controls {
+  position: absolute;
+  z-index: 820;
+  right: 12px;
+  bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  pointer-events: none;
+}
+
+.review-map-navigation { pointer-events: auto; }
+
+.review-map-controls .maplibregl-ctrl {
+  margin: 0;
+  float: none;
+}
+
+.workspace-map .dispatch-map-stage .review-map-legend-tray {
+  position: static;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  pointer-events: auto;
+}
+
+.review-map-attribution-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.review-map-attribution-toggle::marker { content: ""; }
+
+.review-map-attribution-toggle::-webkit-details-marker { display: none; }
+
+.dispatch-map-stage .review-map-controls .map-legend {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.review-map-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 28px;
+  height: 28px;
+  color: var(--muted);
+  border: 1px solid var(--map-glass-surface-border);
+  border-radius: 7px;
+}
+
+.review-map-info svg {
+  width: 18px;
+  height: 18px;
+}
+
+.review-map-attribution-toggle:hover .review-map-info,
+.review-map-legend-tray[open] .review-map-info {
+  color: var(--ink);
+  background: var(--map-glass-surface-border);
+}
+
+.review-map-attribution-toggle:focus-visible {
+  outline: 3px solid #9576e3;
+  outline-offset: 3px;
+  border-radius: 5px;
+}
+
+.review-map-attribution-content {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--map-glass-surface-border);
+}
+
+.review-map-attribution-content .maplibregl-ctrl-attrib {
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.review-map-attribution-content .maplibregl-ctrl-attrib a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .review-libre-frame .review-map-controls {
+    right: 8px;
+    bottom: 8px;
+    max-width: calc(100% - 16px);
+  }
+}
+
+.review-libre-frame .maplibregl-popup-content {
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 12px 38px #0003;
+  padding: 20px 16px 14px;
+  max-height: min(640px, 72vh);
+  overflow: auto;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.review-libre-frame .maplibregl-popup-tip {
+  border-top-color: var(--paper);
+  border-bottom-color: var(--paper);
+}
+
+.review-libre-frame .maplibregl-popup-close-button {
+  width: 30px;
+  height: 30px;
+  right: 4px;
+  top: 2px;
+  color: var(--ink);
+  font-size: 22px;
+  border-radius: 8px;
+}
+
+.review-libre-frame .review-libre-tooltip { pointer-events: none; }
+
+.review-libre-frame .review-libre-tooltip .maplibregl-popup-content {
+  max-height: 420px;
+  padding-top: 14px;
+}
+
+.workspace-map .review-libre-frame .audit-map-popup :is(small, span, i, dt, dd, b, a) {
+  font-size: 13px !important;
+}
+
+.workspace-map .review-libre-frame .audit-map-popup :is(strong) { font-size: 14px; }
+
+.workspace-map .review-libre-frame .audit-map-job-details { font-size: 13px; }
+
+.workspace-map .review-libre-frame .audit-map-job-state-copy small { font-size: 12px !important; }
+
+.workspace-map .review-libre-frame .audit-map-job-states {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+.workspace-map .review-libre-frame .audit-map-job-states > span {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 8px;
+  width: auto;
+  padding: 7px 10px;
+  text-align: left;
+  border: 0;
+}
+
+.workspace-map .review-libre-frame .audit-map-job-state-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.workspace-map .review-libre-frame .audit-map-job-state-copy :is(b, small) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.review-libre-frame .route-leg-tooltip-copy,
+.review-libre-frame .route-home-tooltip-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.review-libre-frame .route-leg-tooltip-copy small,
+.review-libre-frame .route-home-tooltip-copy small {
+  font-size: 12px;
+}
+
+.review-libre-details {
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  margin-top: 12px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--paper) 88%, #7357bd);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.review-libre-frame :is(button, a):focus-visible {
+  outline: 3px solid #9576e3;
+  outline-offset: 2px;
+}
+
+.review-libre-status {
+  position: absolute;
+  z-index: 3;
+  right: 70px;
+  bottom: 38px;
+  max-width: min(420px, 50%);
+  margin: 0;
+  padding: 14px 18px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+:root[data-theme="dark"] .review-libre-frame .maplibregl-ctrl-icon { filter: invert(1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .review-libre-frame *,
+  .review-libre-frame *::before {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+.workspace-map .review-libre-popup-narrow .audit-map-job-identity-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.workspace-map .review-libre-popup-narrow .audit-map-job-identity-head .audit-map-status {
+  margin-left: 0;
+  justify-self: start;
+}
+
+.workspace-map .review-libre-popup-narrow .audit-map-job-details > div {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+}

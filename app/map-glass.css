@@ -1,0 +1,171 @@
+/* Shared map material. Layout and content states belong to their owning components. */
+
+.workspace-map {
+  --map-glass-surface-bg: rgba(255, 255, 255, .76);
+  --map-glass-surface-border: rgba(25, 33, 51, .13);
+  --map-glass-control-bg: rgba(242, 244, 248, .68);
+  --map-glass-control-border: rgba(25, 33, 51, .12);
+  --map-glass-hover-bg: rgba(255, 255, 255, .82);
+  --map-glass-selected-bg: rgba(226, 230, 237, .9);
+  --map-glass-selected-border: rgba(25, 33, 51, .2);
+  --map-glass-text: var(--ink);
+  --map-glass-muted-text: var(--muted);
+  --map-glass-focus: #0071e3;
+  --map-glass-surface-shadow: 0 16px 42px rgba(23, 37, 59, .2), inset 0 1px rgba(255, 255, 255, .035);
+}
+
+:root[data-theme="dark"] .workspace-map {
+  --map-glass-surface-bg: rgba(44, 44, 46, .72);
+  --map-glass-surface-border: rgba(235, 235, 245, .14);
+  --map-glass-control-bg: rgba(58, 58, 60, .68);
+  --map-glass-control-border: rgba(235, 235, 245, .13);
+  --map-glass-hover-bg: rgba(72, 72, 74, .76);
+  --map-glass-selected-bg: rgba(88, 88, 92, .82);
+  --map-glass-selected-border: rgba(235, 235, 245, .24);
+  --map-glass-focus: #64d2ff;
+  --map-glass-surface-shadow: 0 18px 48px rgba(0, 3, 8, .42), inset 0 1px rgba(220, 235, 247, .025);
+}
+
+.workspace-map .map-glass-surface {
+  color: var(--map-glass-text);
+  background: var(--map-glass-surface-bg) !important;
+  background-image: none !important;
+  border-color: var(--map-glass-surface-border) !important;
+  box-shadow: var(--map-glass-surface-shadow);
+  -webkit-backdrop-filter: saturate(145%) blur(22px);
+  backdrop-filter: saturate(145%) blur(22px);
+}
+
+.workspace-map .dispatch-review-topbar.map-glass-surface {
+  box-shadow: 0 1px 0 var(--map-glass-surface-border), 0 4px 10px rgba(23, 37, 59, .08);
+}
+
+:root[data-theme="dark"] .workspace-map .dispatch-review-topbar.map-glass-surface {
+  box-shadow: 0 1px 0 var(--map-glass-surface-border), 0 4px 10px rgba(0, 3, 8, .28);
+}
+
+/* Blur the pseudo-layer: backdrop-filter on the anchor would trap fixed flyouts. */
+
+.workspace-map .map-glass-surface.map-glass-anchor {
+  isolation: isolate;
+  background: var(--map-glass-surface-bg) !important;
+  box-shadow: 0 12px 34px rgba(0, 3, 8, .24), inset 0 1px rgba(255, 255, 255, .035);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.workspace-map .map-glass-surface.map-glass-anchor::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background: transparent;
+  border-radius: inherit;
+  -webkit-backdrop-filter: saturate(145%) blur(22px);
+  backdrop-filter: saturate(145%) blur(22px);
+}
+
+.workspace-map .map-glass-surface :is(.dispatch-date-popover, .panel-head, .route-rail-route, .route-rail-footer) {
+  background: transparent !important;
+}
+
+.workspace-map .map-glass-surface :where(
+  button:not(.review-timeline-visit, .review-timeline-suggestion-note, [data-detail-visit-id]),
+  a,
+  input,
+  select
+) {
+  color: inherit;
+  border-color: var(--map-glass-control-border);
+  box-shadow: none;
+}
+
+.workspace-map .map-glass-surface :where(
+  button:not(.review-timeline-visit, .review-timeline-suggestion-note, [data-detail-visit-id]),
+  a
+) {
+  background: transparent;
+}
+
+.workspace-map .map-glass-surface :where(select, input) {
+  background: var(--map-glass-control-bg) !important;
+}
+
+.workspace-map .map-glass-surface :where(
+  button:not(.review-timeline-visit, .review-timeline-suggestion-note, [data-detail-visit-id]),
+  a
+):hover {
+  background: var(--map-glass-hover-bg) !important;
+}
+
+.workspace-map .map-glass-surface :where(button, a, input, select):focus-visible {
+  outline: 2px solid var(--map-glass-focus) !important;
+  outline-offset: 2px;
+}
+
+.workspace-map .map-glass-surface :is(
+  .route-overview-date-button,
+  .dispatch-filter-trigger,
+  .dispatch-review-trigger,
+  .dispatch-routes-trigger,
+  .dispatch-filter-reset,
+  .dispatch-filter-layers button,
+  .dispatch-date-popover header button,
+  .dispatch-date-popover footer button,
+  .route-rail-footer button,
+  select
+) {
+  background: var(--map-glass-control-bg) !important;
+  border-color: var(--map-glass-control-border) !important;
+}
+
+.workspace-map .map-glass-surface .route-rail-region > h3:has(> button[aria-expanded="true"]) {
+  color: var(--map-glass-text) !important;
+  background: var(--map-glass-selected-bg) !important;
+  border-color: var(--map-glass-selected-border) !important;
+}
+
+.workspace-map .map-glass-surface .route-rail-region > h3 > button[aria-expanded="true"] {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+/* Keep general state defaults weaker than content-row exceptions; named controls own their selected treatment. */
+
+.workspace-map .map-glass-surface :where(
+  button[aria-expanded="true"],
+  button[aria-pressed="true"]:not(.review-timeline-visit, .review-timeline-suggestion-note, [data-detail-demand-id], [data-detail-visit-id]),
+  button[aria-checked="true"],
+  button.selected:not(.review-timeline-visit, .review-timeline-suggestion-note, [data-detail-visit-id]),
+  a.selected,
+  .issue-card.selected
+),
+.workspace-map .map-glass-surface :is(
+  .route-overview-date-button[aria-expanded="true"],
+  .dispatch-filter-trigger[aria-expanded="true"],
+  .dispatch-review-trigger[aria-expanded="true"],
+  .dispatch-routes-trigger[aria-expanded="true"],
+  .dispatch-filter-layers button[aria-pressed="true"],
+  .issue-card.selected
+) {
+  color: var(--map-glass-text) !important;
+  background: var(--map-glass-selected-bg) !important;
+  border-color: var(--map-glass-selected-border) !important;
+}
+
+.workspace-map .map-glass-surface .dispatch-date-days button:not(.selected) { background: transparent; }
+
+.workspace-map .map-glass-surface .dispatch-date-days button.selected {
+  color: #fff !important;
+  background: var(--blue) !important;
+  border-color: transparent !important;
+}
+
+.workspace-map .map-glass-surface .dispatch-map-route-rail ol button.selected,
+.workspace-map .map-glass-surface .dispatch-map-route-rail ol button[aria-pressed="true"],
+.workspace-map .map-glass-surface [data-detail-demand-id][aria-pressed="true"] {
+  background: rgba(0, 113, 227, .2) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}

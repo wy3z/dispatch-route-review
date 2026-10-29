@@ -1,0 +1,286 @@
+name: dispatch-route-review
+
+# Deployment prerequisite: this reference requires a deployment-approved
+# outbound network path before use. As written, app and cache-worker attach
+# only to internal networks and cannot reach external providers.
+# Attach app to approved OSRM egress and cache-worker to approved Autotask/UK/EU
+# geocoder egress in the deployment configuration. Keep PostgreSQL isolated;
+# no additional published ports are required. Config/build checks do not test
+# runtime connectivity. See docs/deployment.md#reference-stack.
+
+services:
+  postgres:
+    image: postgres:16.8-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env.prod}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env.prod}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+
+  migrate:
+    build:
+      context: .
+      target: cache-worker
+    restart: "no"
+    command: ["pnpm", "db:migrate"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_POOL_SIZE: "2"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - data
+    security_opt:
+      - no-new-privileges:true
+
+  app:
+    build:
+      context: .
+      target: app
+    restart: unless-stopped
+    environment:
+      AUTOTASK_WEB_URL: ${AUTOTASK_WEB_URL:-}
+      AUTH_MODE: forward-auth
+      PUBLIC_ORIGIN: https://${APP_FQDN}
+      ENTRA_TENANT_ID: ${ENTRA_TENANT_ID:?set the concrete Entra tenant GUID}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_POOL_SIZE: ${APP_DATABASE_POOL_SIZE:-10}
+      OSRM_BASE_URL: ${OSRM_BASE_URL:?set a private HTTPS OSRM or approved maps endpoint}
+      AUTOTASK_READY_TO_BOOK_QUEUE_ID: ${AUTOTASK_READY_TO_BOOK_QUEUE_ID:?set AUTOTASK_READY_TO_BOOK_QUEUE_ID for your Autotask tenant}
+      AUTOTASK_READY_TO_BOOK_STATUS_ID: ${AUTOTASK_READY_TO_BOOK_STATUS_ID:?set AUTOTASK_READY_TO_BOOK_STATUS_ID for your Autotask tenant}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    # The deployment must also supply outbound access to the approved OSRM endpoint.
+    networks:
+      - app-network
+      - data
+    # Keep the application reachable for roster bootstrap and degraded-cache
+    # diagnostics. Operational readiness is monitored separately below.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health/live').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: dispatch-route-review_app
+      traefik.http.routers.dispatch-route-review.rule: Host(`${APP_FQDN:?set the public application FQDN}`)
+      traefik.http.routers.dispatch-route-review.entrypoints: websecure
+      traefik.http.routers.dispatch-route-review.tls: "true"
+      traefik.http.routers.dispatch-route-review.tls.certresolver: le
+      traefik.http.routers.dispatch-route-review.middlewares: dispatch-route-review-identity-sanitize@docker,dispatch-route-review-auth@docker,dispatch-route-review-security@docker
+      # Only this exact app route bypasses ForwardAuth, after the proxy cookie is
+      # gone, so the application can perform the fixed tenant logout handoff.
+      traefik.http.routers.dispatch-route-review-logout.rule: Host(`${APP_FQDN:?set the public application FQDN}`) && Path(`/logout/entra`)
+      traefik.http.routers.dispatch-route-review-logout.priority: "110"
+      traefik.http.routers.dispatch-route-review-logout.entrypoints: websecure
+      traefik.http.routers.dispatch-route-review-logout.tls: "true"
+      traefik.http.routers.dispatch-route-review-logout.tls.certresolver: le
+      traefik.http.routers.dispatch-route-review-logout.middlewares: dispatch-route-review-security@docker
+      traefik.http.routers.dispatch-route-review-logout.service: dispatch-route-review
+      traefik.http.services.dispatch-route-review.loadbalancer.server.port: "3000"
+      traefik.http.services.dispatch-route-review.loadbalancer.healthcheck.path: /api/health/live
+      traefik.http.services.dispatch-route-review.loadbalancer.healthcheck.interval: 10s
+      # Remove every caller-supplied identity header before ForwardAuth. OAuth2
+      # Proxy then supplies the only trusted canonical tuple below.
+      traefik.http.middlewares.dispatch-route-review-identity-sanitize.headers.customrequestheaders.X-Auth-Request-User: ""
+      traefik.http.middlewares.dispatch-route-review-identity-sanitize.headers.customrequestheaders.X-Auth-Request-Email: ""
+      traefik.http.middlewares.dispatch-route-review-identity-sanitize.headers.customrequestheaders.X-Auth-Request-Preferred-Username: ""
+      traefik.http.middlewares.dispatch-route-review-identity-sanitize.headers.customrequestheaders.X-Forwarded-User: ""
+      traefik.http.middlewares.dispatch-route-review-identity-sanitize.headers.customrequestheaders.X-Forwarded-Email: ""
+      traefik.http.middlewares.dispatch-route-review-identity-sanitize.headers.customrequestheaders.X-Forwarded-Preferred-Username: ""
+      traefik.http.middlewares.dispatch-route-review-auth.forwardauth.address: http://oauth2-proxy:4180/
+      traefik.http.middlewares.dispatch-route-review-auth.forwardauth.trustForwardHeader: "false"
+      traefik.http.middlewares.dispatch-route-review-auth.forwardauth.authResponseHeaders: X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Preferred-Username
+    security_opt:
+      - no-new-privileges:true
+
+  cache-worker:
+    build:
+      context: .
+      target: cache-worker
+    restart: unless-stopped
+    environment:
+      # The worker is the sole live Autotask caller. Never add these variables
+      # to app, migrate, oauth2-proxy, or Traefik.
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_POOL_SIZE: "4"
+      CACHE_WORKER: "1"
+      AUTOTASK_THIRD_PARTY_COMPANY_FIELD: ${AUTOTASK_THIRD_PARTY_COMPANY_FIELD:-}
+      AUTOTASK_SUPPORT_QUEUE_IDS: ${AUTOTASK_SUPPORT_QUEUE_IDS:?set AUTOTASK_SUPPORT_QUEUE_IDS for your Autotask tenant}
+      AUTOTASK_INSTALL_QUEUE_IDS: ${AUTOTASK_INSTALL_QUEUE_IDS:?set AUTOTASK_INSTALL_QUEUE_IDS for your Autotask tenant}
+      AUTOTASK_SURVEY_QUEUE_IDS: ${AUTOTASK_SURVEY_QUEUE_IDS:?set AUTOTASK_SURVEY_QUEUE_IDS for your Autotask tenant}
+      AUTOTASK_REQUESTED_STATUS_IDS: ${AUTOTASK_REQUESTED_STATUS_IDS:?set AUTOTASK_REQUESTED_STATUS_IDS for your Autotask tenant}
+      AUTOTASK_ACCESS_STATUS_IDS: ${AUTOTASK_ACCESS_STATUS_IDS:?set AUTOTASK_ACCESS_STATUS_IDS for your Autotask tenant}
+      AUTOTASK_THIRD_PARTY_REQUEST_STATUS_IDS: ${AUTOTASK_THIRD_PARTY_REQUEST_STATUS_IDS:?set AUTOTASK_THIRD_PARTY_REQUEST_STATUS_IDS for your Autotask tenant}
+      AUTOTASK_READY_TO_BOOK_QUEUE_ID: ${AUTOTASK_READY_TO_BOOK_QUEUE_ID:?set AUTOTASK_READY_TO_BOOK_QUEUE_ID for your Autotask tenant}
+      AUTOTASK_READY_TO_BOOK_STATUS_ID: ${AUTOTASK_READY_TO_BOOK_STATUS_ID:?set AUTOTASK_READY_TO_BOOK_STATUS_ID for your Autotask tenant}
+      AUTOTASK_API_CODE: ${AUTOTASK_API_CODE:?set Autotask credentials in .env.prod}
+      AUTOTASK_USERNAME: ${AUTOTASK_USERNAME:?set Autotask credentials in .env.prod}
+      AUTOTASK_SECRET: ${AUTOTASK_SECRET:?set Autotask credentials in .env.prod}
+      AUTOTASK_BASE_URL: ${AUTOTASK_BASE_URL:-}
+      UK_GEOCODER_URL: ${UK_GEOCODER_URL:?set an approved HTTPS UK geocoder endpoint}
+      EU_GEOCODER_URL: ${EU_GEOCODER_URL:?set an approved HTTPS EU geocoder endpoint}
+      GEOCODER_ALLOWED_HOSTS: ${GEOCODER_ALLOWED_HOSTS:?set approved geocoder hostnames}
+      GEOCODER_USER_AGENT_CONTACT: ${GEOCODER_USER_AGENT_CONTACT:?set an identifying geocoder contact URL}
+      CACHE_WARM_PAST_DAYS: ${CACHE_WARM_PAST_DAYS:-30}
+      CACHE_WARM_FUTURE_DAYS: ${CACHE_WARM_FUTURE_DAYS:-30}
+      CACHE_WORKER_POLL_SECONDS: ${CACHE_WORKER_POLL_SECONDS:-10}
+      CACHE_WORKER_BATCH_SIZE: ${CACHE_WORKER_BATCH_SIZE:-2}
+      CACHE_REFRESH_LEASE_SECONDS: ${CACHE_REFRESH_LEASE_SECONDS:-1800}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    # The deployment must also supply outbound access to Autotask and geocoders.
+    networks:
+      - data
+    # The worker health probe evaluates cache progress, queue delay, retry
+    # failures and expired leases through the same policy as app readiness.
+    healthcheck:
+      test: ["CMD", "pnpm", "exec", "tsx", "scripts/cache-worker-health.ts"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.3
+    restart: unless-stopped
+    command:
+      - --provider=oidc
+      - --provider-display-name=Microsoft Entra ID
+      - --oidc-issuer-url=https://login.microsoftonline.com/${ENTRA_TENANT_ID:?set the Entra tenant ID}/v2.0
+      - --insecure-oidc-skip-nonce=false
+      - --client-id=${OAUTH2_PROXY_CLIENT_ID:?set the Entra application client ID}
+      - --client-secret=${OAUTH2_PROXY_CLIENT_SECRET:?set the Entra application client secret}
+      - --redirect-url=https://${APP_FQDN:?set the public application FQDN}/oauth2/callback
+      - --scope=openid profile email
+      # Entra work accounts reliably provide preferred_username (normally the
+      # corporate UPN); configure an email claim explicitly in Entra if this is
+      # not a usable address in the tenant.
+      - --oidc-email-claim=preferred_username
+      - --email-domain=${OAUTH2_PROXY_EMAIL_DOMAINS:-*}
+      # Traefik ForwardAuth uses this static 202 response for an authenticated
+      # session and OAuth2 Proxy handles login redirects itself when needed.
+      - --upstream=static://202
+      - --http-address=0.0.0.0:4180
+      - --reverse-proxy=true
+      - --trusted-proxy-ip=${EDGE_SUBNET:-172.30.0.0/24}
+      - --set-xauthrequest=true
+      - --pass-access-token=false
+      - --pass-authorization-header=false
+      - --set-authorization-header=false
+      - --skip-provider-button=true
+      - --cookie-name=__Host-dispatch_route_review
+      - --cookie-secret=${OAUTH2_PROXY_COOKIE_SECRET:?set a 32-byte base64url cookie secret}
+      - --cookie-secure=true
+      - --cookie-httponly=true
+      - --cookie-samesite=lax
+      - --cookie-refresh=1h
+      - --cookie-expire=8h
+      - --code-challenge-method=S256
+      - --silence-ping-logging=true
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - edge
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: dispatch-route-review_edge
+      # Callback/sign-in endpoints must bypass ForwardAuth to avoid an auth loop.
+      traefik.http.routers.dispatch-route-review-oauth.rule: Host(`${APP_FQDN:?set the public application FQDN}`) && PathPrefix(`/oauth2/`)
+      traefik.http.routers.dispatch-route-review-oauth.priority: "100"
+      traefik.http.routers.dispatch-route-review-oauth.entrypoints: websecure
+      traefik.http.routers.dispatch-route-review-oauth.tls: "true"
+      traefik.http.routers.dispatch-route-review-oauth.tls.certresolver: le
+      traefik.http.routers.dispatch-route-review-oauth.middlewares: dispatch-route-review-security@docker
+      traefik.http.services.dispatch-route-review-oauth.loadbalancer.server.port: "4180"
+      traefik.http.services.dispatch-route-review-oauth.loadbalancer.healthcheck.path: /ready
+      traefik.http.services.dispatch-route-review-oauth.loadbalancer.healthcheck.interval: 10s
+      traefik.http.middlewares.dispatch-route-review-security.headers.frameDeny: "true"
+      traefik.http.middlewares.dispatch-route-review-security.headers.contentTypeNosniff: "true"
+      traefik.http.middlewares.dispatch-route-review-security.headers.referrerPolicy: no-referrer
+      traefik.http.middlewares.dispatch-route-review-security.headers.stsSeconds: "31536000"
+      traefik.http.middlewares.dispatch-route-review-security.headers.stsIncludeSubdomains: "true"
+    security_opt:
+      - no-new-privileges:true
+
+  traefik:
+    image: traefik:v3.3.7
+    restart: unless-stopped
+    command:
+      - --api.dashboard=false
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=dispatch-route-review_edge
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.traefik.address=:8080
+      - --ping=true
+      - --ping.entrypoint=traefik
+      - --certificatesresolvers.le.acme.email=${ACME_EMAIL:?set an ACME notification email}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.httpchallenge=true
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+      - --log.level=INFO
+      - --accesslog=true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_letsencrypt:/letsencrypt
+    networks:
+      - edge
+      - app-network
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  postgres_data:
+  traefik_letsencrypt:
+
+networks:
+  edge:
+    name: dispatch-route-review_edge
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${EDGE_SUBNET:-172.30.0.0/24}
+  app-network:
+    name: dispatch-route-review_app
+    internal: true
+    driver: bridge
+  data:
+    internal: true
+    driver: bridge

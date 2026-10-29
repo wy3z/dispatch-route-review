@@ -1,0 +1,26 @@
+# Authentication and authorization boundaries
+/modules/access/ @wy3z
+/proxy.ts @wy3z
+/app/logout/ @wy3z
+
+# Database schema and migration execution
+/db/migrations/ @wy3z
+/scripts/migrate.ts @wy3z
+/platform/database.ts @wy3z
+
+# Production deployment and secret boundaries
+/docker/ @wy3z
+/docs/deployment.md @wy3z
+/Dockerfile @wy3z
+/.env*.example @wy3z
+/.gitignore @wy3z
+/.dockerignore @wy3z
+/modules/work/worker/ @wy3z
+/scripts/cache-worker.ts @wy3z
+
+# CI and repository policy
+/.github/workflows/ @wy3z
+/.github/CODEOWNERS @wy3z
+/scripts/check-boundaries.mjs @wy3z
+/workflows/ @wy3z
+/CONTRIBUTING.md @wy3z

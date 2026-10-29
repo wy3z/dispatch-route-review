@@ -1,0 +1,46 @@
+{
+  "name": "dispatch-route-review",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=24.19.0"
+  },
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "demo:seed": "tsx scripts/demo-seed.ts",
+    "admin:bootstrap": "tsx scripts/provision-administrator.ts",
+    "auth:recover-identity": "tsx scripts/recover-auth-identity.ts",
+    "cache:worker": "tsx scripts/cache-worker.ts",
+    "test": "NEXT_DIST_DIR=.next-test pnpm run test:isolated",
+    "test:browser": "node tests/run-dispatch-browser-regression.mjs",
+    "test:isolated": "pnpm run build && node --test tests/rendered-html.test.mjs && tsx --test tests/*.test.ts && pnpm run test:browser",
+    "lint": "node scripts/check-boundaries.mjs && eslint . --ignore-pattern dist --ignore-pattern '.next*'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "maplibre-gl": "5.24.0",
+    "motion": "^13.1.0",
+    "next": "16.3.0",
+    "pg": "^8.16.3",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/geojson": "7946.0.16",
+    "@types/node": "22.19.19",
+    "@types/pg": "^8.15.5",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.3.0",
+    "tailwindcss": "4.3.3",
+    "tsx": "^4.20.6",
+    "typescript": "5.9.3"
+  },
+  "type": "module"
+}

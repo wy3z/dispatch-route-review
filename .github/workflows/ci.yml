@@ -1,0 +1,229 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compose-contracts:
+    name: Compose contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate example Compose definition
+        run: docker compose --project-directory . -f docker/compose.example.yml --env-file docker/.env.prod.example config --quiet
+
+      - name: Validate demo profile
+        run: docker compose --project-directory . -f docker/compose.dev.yml --profile demo config --quiet
+
+      - name: Validate authenticated development overlay
+        run: >-
+          docker compose --project-directory .
+          --env-file docker/.env.dev.example
+          -f docker/compose.dev.yml
+          -f docker/compose.dev-auth.yml
+          config --quiet
+
+      - name: Validate example OAuth2 Proxy contract
+        run: >-
+          node scripts/check-oauth2-proxy-config.mjs
+          --env-file docker/.env.prod.example
+          --file docker/compose.example.yml
+
+      - name: Validate development OAuth2 Proxy contract
+        run: >-
+          node scripts/check-oauth2-proxy-config.mjs
+          --env-file docker/.env.dev.example
+          --file docker/compose.dev.yml
+          --file docker/compose.dev-auth.yml
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+  test:
+    name: Test
+    # Chrome's DevTools bootstrap intermittently times out on ubuntu-26.04;
+    # pinned until that is diagnosed.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16.8-alpine
+        env:
+          POSTGRES_DB: dispatch_route_review_test
+          POSTGRES_USER: dispatch_route_review
+          POSTGRES_PASSWORD: dispatch_route_review
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dispatch_route_review -d dispatch_route_review_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql://dispatch_route_review:dispatch_route_review@127.0.0.1:5432/dispatch_route_review_test
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Parallel test files racing on CREATE EXTENSION IF NOT EXISTS can fail
+      # with duplicate catalog keys, so create it once first, as verify.sh does.
+      - name: Create pgcrypto
+        run: psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -qc "CREATE EXTENSION IF NOT EXISTS pgcrypto"
+
+      - name: Test
+        env:
+          MAP_TEST_DIAGNOSTIC_OUTPUT: ${{ runner.temp }}/dispatch-startup-diagnostics
+        run: pnpm test
+
+      - name: Preserve browser startup diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dispatch-startup-diagnostics
+          path: ${{ runner.temp }}/dispatch-startup-diagnostics
+          if-no-files-found: ignore
+          retention-days: 7
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Build example Compose images
+        run: docker compose --project-directory . -f docker/compose.example.yml --env-file docker/.env.prod.example build
+
+  migrations:
+    name: PostgreSQL migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16.8-alpine
+        env:
+          POSTGRES_DB: dispatch_route_review_migration
+          POSTGRES_USER: dispatch_route_review
+          POSTGRES_PASSWORD: dispatch_route_review
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dispatch_route_review -d dispatch_route_review_migration"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://dispatch_route_review:dispatch_route_review@127.0.0.1:5432/dispatch_route_review_migration
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply PostgreSQL migrations
+        run: pnpm db:migrate
+
+      - name: Verify applied migrations are stable
+        run: pnpm db:migrate

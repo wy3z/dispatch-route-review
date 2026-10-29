@@ -1,0 +1,582 @@
+.backdrop {
+  position: fixed;
+  z-index: 2200;
+  inset: 0;
+  padding: 28px 20px;
+  display: grid;
+  place-items: center;
+  background: rgba(13, 18, 28, 0.52);
+  backdrop-filter: saturate(120%) blur(9px);
+  animation: backdropIn 180ms ease-out both;
+}
+
+.dialog {
+  position: relative;
+  width: min(620px, 100%);
+  max-height: calc(100dvh - 56px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--paper) 97%, var(--wash));
+  border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
+  border-radius: 20px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 28px 90px rgba(7, 12, 22, 0.28),
+    0 7px 24px rgba(7, 12, 22, 0.16);
+  animation: dialogIn 260ms cubic-bezier(0.2, 0.82, 0.2, 1) both;
+}
+
+.header {
+  position: relative;
+  padding: 21px 58px 18px 23px;
+  flex: 0 0 auto;
+  background: radial-gradient(circle at 2% 0%, rgba(82, 111, 232, 0.12), transparent 42%),
+    color-mix(in srgb, var(--paper) 98%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+}
+
+.heading { min-width: 0; }
+
+.kickerRow {
+  margin-bottom: 9px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.kicker {
+  color: var(--blue);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.095em;
+  text-transform: uppercase;
+}
+
+.status {
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: color-mix(in srgb, var(--amber) 90%, #5c3900);
+  background: color-mix(in srgb, var(--amber) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--amber) 22%, transparent);
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.status > span {
+  width: 5px;
+  height: 5px;
+  background: currentColor;
+  border-radius: 50%;
+}
+
+.statusComplete {
+  color: color-mix(in srgb, var(--mint) 90%, #075d43);
+  background: color-mix(in srgb, var(--mint) 12%, transparent);
+  border-color: color-mix(in srgb, var(--mint) 22%, transparent);
+}
+
+.heading h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(20px, 3vw, 25px);
+  font-weight: 690;
+  letter-spacing: -0.035em;
+  line-height: 1.16;
+  overflow-wrap: anywhere;
+}
+
+.heading p {
+  max-width: 580px;
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.closeButton {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 10%, transparent);
+  border: 1px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.closeButton:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--muted) 17%, transparent);
+  transform: scale(1.045);
+}
+
+.closeButton svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+}
+
+.scroller {
+  padding: 19px 23px 22px;
+  display: grid;
+  gap: 19px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.section { min-width: 0; }
+
+.sectionHeading {
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: color-mix(in srgb, var(--ink) 88%, var(--muted));
+  font-size: 10px;
+  font-weight: 720;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.sectionIcon {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  color: var(--blue);
+  background: color-mix(in srgb, var(--blue) 10%, transparent);
+  border-radius: 7px;
+}
+
+.sectionIcon svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.65;
+}
+
+.appointmentCard {
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: minmax(190px, 1.3fr) minmax(260px, 1fr);
+  align-items: center;
+  gap: 20px;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--blue) 10%, var(--paper)), color-mix(in srgb, var(--paper) 98%, transparent));
+  border: 1px solid color-mix(in srgb, var(--blue) 15%, var(--line));
+  border-radius: 14px;
+}
+
+.dateBlock span,
+.detailList dt,
+.appointmentGrid dt,
+.recordGrid dt {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+}
+
+.dateBlock strong {
+  margin-top: 5px;
+  display: block;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 660;
+  line-height: 1.35;
+}
+
+.appointmentGrid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+}
+
+.appointmentGrid > div {
+  min-width: 0;
+  padding-inline: 12px;
+  border-left: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+}
+
+.appointmentGrid dd {
+  margin: 5px 0 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 680;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.twoColumnSections {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  gap: 18px;
+}
+
+.detailList,
+.engineerCard,
+.locationCard {
+  background: color-mix(in srgb, var(--wash) 64%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+}
+
+.detailList {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+}
+
+.detailList > div {
+  min-width: 0;
+  padding: 12px 13px;
+}
+
+.detailList > div:nth-child(even) { border-left: 1px solid var(--line); }
+
+.detailList > div:nth-child(n + 3) { border-top: 1px solid var(--line); }
+
+.detailList dd {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 620;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.ticketLink {
+  color: var(--blue) !important;
+  font-weight: 680;
+}
+
+.ticketLink:hover { text-decoration: underline; }
+
+.engineerCard {
+  --engineer-colour: var(--blue);
+  min-height: 74px;
+  padding: 13px 14px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.engineerAvatar {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--engineer-colour);
+  border: 2px solid color-mix(in srgb, var(--paper) 90%, transparent);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--engineer-colour) 40%, transparent);
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: 0.03em;
+}
+
+.engineerCard div { min-width: 0; }
+
+.engineerCard strong,
+.engineerCard div > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.engineerCard strong {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 660;
+}
+
+.engineerCard div > span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.supportingCopy {
+  margin: 6px 2px 0;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.4;
+}
+
+.supportingCopy span { font-variant-numeric: tabular-nums; }
+
+.locationCard {
+  min-height: 67px;
+  padding: 13px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.locationCard div { min-width: 0; }
+
+.locationCard strong,
+.locationCard div > span {
+  display: block;
+}
+
+.locationCard strong {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.locationCard div > span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.coordinates {
+  padding: 5px 8px;
+  flex: 0 0 auto;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 8%, transparent);
+  border-radius: 7px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.recordGrid {
+  margin: 0;
+  padding: 12px 15px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  background: color-mix(in srgb, var(--wash) 48%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
+  border-radius: 12px;
+}
+
+.recordGrid dd {
+  margin: 4px 0 0;
+  color: color-mix(in srgb, var(--ink) 82%, var(--muted));
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.flags {
+  margin-top: -10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.flags span {
+  padding: 5px 8px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 630;
+}
+
+.footer {
+  min-height: 58px;
+  padding: 10px 20px 10px 23px;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: color-mix(in srgb, var(--wash) 52%, var(--paper));
+  border-top: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+}
+
+.readOnlyNote,
+.noLink {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.readOnlyNote::before {
+  width: 6px;
+  height: 6px;
+  margin-right: 7px;
+  display: inline-block;
+  background: var(--mint);
+  border-radius: 50%;
+  content: "";
+  vertical-align: 1px;
+}
+
+.footerActions {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.openLink {
+  min-height: 36px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 670;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+  margin: 0 !important;
+  color: var(--blue) !important;
+  background: color-mix(in srgb, var(--blue) 9%, transparent) !important;
+  border: 1px solid transparent;
+  text-decoration: none;
+  box-shadow: none;
+}
+
+.openLink:hover {
+  background: color-mix(in srgb, var(--blue) 14%, transparent) !important;
+  transform: translateY(-1px);
+}
+
+.openLink > :global(.autotask-link-content) {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.autotaskIcon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  display: inline-block;
+  background: url("/autotask-favicon.ico") center / contain no-repeat;
+  border-radius: 3px;
+}
+
+.closeButton:focus-visible,
+.ticketLink:focus-visible,
+.openLink:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--blue) 38%, transparent);
+  outline-offset: 2px;
+}
+
+@keyframes backdropIn {
+  from { opacity: 0; }
+}
+
+@keyframes dialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.975);
+  }
+}
+
+@media (max-width: 620px) {
+  .backdrop {
+    padding: 10px;
+    align-items: end;
+  }
+
+  .dialog {
+    max-height: calc(100dvh - 20px);
+    border-radius: 19px;
+  }
+
+  .header { padding: 20px 56px 17px 19px; }
+
+  .closeButton {
+    top: 16px;
+    right: 15px;
+  }
+
+  .scroller { padding: 18px 19px 22px; }
+
+  .appointmentCard,
+  .twoColumnSections {
+    grid-template-columns: 1fr;
+  }
+
+  .appointmentCard { gap: 13px; }
+
+  .appointmentGrid > div:first-child {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .locationCard {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .recordGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .footer { padding: 11px 15px; }
+
+  .readOnlyNote { display: none; }
+
+  .footerActions { width: 100%; }
+
+  .openLink { flex: 0 1 auto; }
+}
+
+@media (max-width: 390px) {
+  .detailList { grid-template-columns: 1fr; }
+
+  .detailList > div:nth-child(even) { border-left: 0; }
+
+  .detailList > div:nth-child(n + 2) { border-top: 1px solid var(--line); }
+
+  .appointmentGrid > div { padding-inline: 8px; }
+
+  .footerActions { align-items: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .dialog {
+    animation: none;
+  }
+
+  .closeButton,
+  .openLink {
+    transition: none;
+  }
+}
